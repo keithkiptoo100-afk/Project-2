@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P2P Escrow Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14181B; --panel:#1B2024; --panel-2:#21272B; --line:#2B3237;
+    --text:#ECEFEF; --muted:#8D959B; --green:#34C77B; --amber:#F0A63A; --red:#E2584F;
+    --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:var(--font-body);}
+  .app{max-width:920px;margin:0 auto;padding:28px 20px 60px;}
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  header.top h1{font-family:var(--font-display);font-size:22px;margin:0 0 4px;letter-spacing:-0.01em;}
+  header.top p{margin:0;color:var(--muted);font-size:13px;}
+  .who{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px;}
+  .who b{color:var(--text);}
+  .who button{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:5px 9px;border-radius:6px;cursor:pointer;}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;}
+  .tab{background:none;border:none;color:var(--muted);font-weight:600;font-size:13px;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--text);border-bottom-color:var(--amber);}
+
+  .offer-card, .order-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
+  .offer-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .trader{font-weight:600;font-size:14px;}
+  .trader-meta{color:var(--muted);font-size:11px;margin-top:2px;}
+  .badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.04em;}
+  .badge.sell{color:var(--red);background:rgba(226,88,79,0.12);}
+  .badge.buy{color:var(--green);background:rgba(52,199,123,0.12);}
+  .offer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+  .offer-grid .cell{font-size:11px;color:var(--muted);}
+  .offer-grid .cell .v{display:block;font-family:var(--font-mono);color:var(--text);font-size:13px;margin-top:2px;}
+
+  .btn{font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;}
+  .btn-primary{background:var(--amber);color:var(--ink);}
+  .btn-green{background:var(--green);color:var(--ink);}
+  .btn-red{background:transparent;color:var(--red);border:1px solid rgba(226,88,79,0.4);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .empty{text-align:center;padding:50px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:12px;}
+  .empty h3{font-family:var(--font-display);color:var(--text);margin-bottom:6px;font-size:16px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;max-width:400px;width:100%;}
+  .modal h3{font-family:var(--font-display);margin:0 0 4px;font-size:17px;}
+  .modal .sub{color:var(--muted);font-size:12px;margin-bottom:16px;}
+  label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:14px;}
+  input, select{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-family:var(--font-mono);font-size:14px;padding:9px 10px;border-radius:7px;}
+  select{font-family:var(--font-body);font-size:13px;}
+  .modal-total{margin-top:16px;background:var(--panel-2);border-radius:8px;padding:10px 12px;font-family:var(--font-mono);font-size:13px;display:flex;justify-content:space-between;}
+  .modal-actions{display:flex;gap:8px;margin-top:18px;}
+  .modal-actions .btn{flex:1;}
+  .err{color:var(--red);font-size:11px;margin-top:6px;min-height:14px;}
+
+  .order-detail{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;}
+  .order-detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;}
+  .order-detail-head h3{font-family:var(--font-display);margin:0 0 4px;font-size:16px;}
+  .order-detail-head .sub{color:var(--muted);font-size:12px;}
+  .timer{font-family:var(--font-mono);font-size:13px;padding:5px 10px;border-radius:6px;background:var(--panel-2);}
+  .timer.crit{color:var(--red);}
+
+  .event-list{margin:16px 0;border-left:2px solid var(--line);padding-left:14px;}
+  .event-list .ev{margin-bottom:12px;font-size:12px;}
+  .event-list .ev .t{font-family:var(--font-mono);color:var(--muted);font-size:11px;}
+
+  .paypanel{background:var(--panel-2);border-radius:10px;padding:14px;margin-top:6px;font-size:12px;color:var(--muted);}
+  .paypanel .amt{font-family:var(--font-mono);color:var(--text);font-size:18px;font-weight:600;margin:4px 0;}
+  .action-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .disputed-note{background:rgba(226,88,79,0.1);border:1px solid rgba(226,88,79,0.3);color:var(--red);font-size:12px;padding:10px 12px;border-radius:8px;margin-top:14px;}
+
+  .create-form, .auth-form{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:400px;margin:40px auto;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+  .auth-toggle{text-align:center;margin-top:14px;font-size:12px;color:var(--muted);}
+  .auth-toggle a{color:var(--amber);cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+// Point this at your deployed backend URL in production.
+const API_BASE = 'http://localhost:4000/api';
+
+let session = JSON.parse(localStorage.getItem('p2p_session') || 'null'); // {token, user}
+let currentTab = 'market';
+let activeOrderId = null;
+let authMode = 'login';
+let offersCache = [];
+let ordersCache = [];
+let tickHandle = null;
+
+async function api(path, opts={}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
+  if (session?.token) headers.Authorization = 'Bearer ' + session.token;
+  const res = await fetch(API_BASE + path, { ...opts, headers });
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+  return data;
+}
+
+function fmtMoney(n, cur){ return (cur==='KES' ? 'KSh ' : '$') + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+function render(){
+  const app = document.getElementById('app');
+  if (!session) { app.innerHTML = renderAuth(); return; }
+  app.innerHTML = `
+    <header class="top">
+      <div><h1>P2P Escrow Desk</h1><p>Trade Deriv USD funding with other traders using M-Pesa.</p></div>
+      <div class="who"><span>Signed in as <b>${session.user.name}</b></span><button onclick="logout()">Log out</button></div>
+    </header>
+    <div class="tabs">
+      <button class="tab ${currentTab==='market'?'active':''}" onclick="setTab('market')">Marketplace</button>
+      <button class="tab ${currentTab==='orders'?'active':''}" onclick="setTab('orders')">My Orders</button>
+      <button class="tab ${currentTab==='create'?'active':''}" onclick="setTab('create')">Post an Offer</button>
+    </div>
+    <div id="view"><div class="empty">Loading…</div></div>
+  `;
+  loadView();
+}
+
+function renderAuth(){
+  return `
+    <div class="auth-form">
+      <h3 style="font-family:var(--font-display);margin-top:0;">${authMode==='login'?'Log in':'Create an account'}</h3>
+      <div id="authErr" class="err"></div>
+      ${authMode==='signup' ? `<label>Name</label><input id="a_name" placeholder="Your full name">` : ''}
+      <label>Phone number</label>
+      <input id="a_phone" placeholder="2547XXXXXXXX">
+      ${authMode==='signup' ? `<label>M-Pesa payout details</label><input id="a_payout" placeholder="Till, paybill, or phone to receive payment">` : ''}
+      <label>Password</label>
+      <input id="a_password" type="password" placeholder="At least 8 characters">
+      <div class="modal-actions"><button class="btn btn-primary" style="flex:1" onclick="submitAuth()">${authMode==='login'?'Log in':'Sign up'}</button></div>
+      <div class="auth-toggle">
+        ${authMode==='login' ? `New here? <a onclick="authMode='signup';render()">Create an account</a>` : `Already registered? <a onclick="authMode='login';render()">Log in</a>`}
+      </div>
+    </div>
+  `;
+}
+
+async function submitAuth(){
+  const phone = document.getElementById('a_phone').value.trim();
+  const password = document.getElementById('a_password').value;
+  const errEl = document.getElementById('authErr');
+  try{
+    let data;
+    if (authMode==='signup'){
+      const name = document.getElementById('a_name').value.trim();
+      const payout_details = document.getElementById('a_payout').value.trim();
+      if(!name || !phone || !password) throw new Error('Fill in every field.');
+      data = await api('/auth/signup', { method:'POST', body: JSON.stringify({name, phone, password, payout_details}) });
+    } else {
+      data = await api('/auth/login', { method:'POST', body: JSON.stringify({phone, password}) });
+    }
+    session = data;
+    localStorage.setItem('p2p_session', JSON.stringify(session));
+    currentTab='market';
+    render();
+  }catch(e){
+    errEl.textContent = e.message;
+  }
+}
+
+function logout(){ session=null; localStorage.removeItem('p2p_session'); render(); }
+function setTab(t){ currentTab=t; activeOrderId=null; render(); }
+
+async function loadView(){
+  try{
+    if(currentTab==='market'){
+      offersCache = await api('/offers');
+      document.getElementById('view').innerHTML = renderMarket();
+    } else if(currentTab==='orders'){
+      ordersCache = await api('/orders');
+      document.getElementById('view').innerHTML = activeOrderId ? await renderOrderDetail() : renderOrdersList();
+      startTicker();
+    } else if(currentTab==='create'){
+      document.getElementById('view').innerHTML = renderCreateForm();
+    }
+  }catch(e){
+    document.getElementById('view').innerHTML = `<div class="empty"><h3>Couldn't load that</h3><p>${e.message}</p></div>`;
+  }
+}
+
+function renderMarket(){
+  if(!offersCache.length) return `<div class="empty"><h3>No offers right now</h3><p>Post the first offer to get trading.</p></div>`;
+  return offersCache.map(o=>`
+    <div class="offer-card">
+      <div class="offer-head">
+        <div>
+          <span class="badge ${o.side}">${o.side==='sell'?'Selling USD':'Buying USD'}</span>
+          <div class="trader" style="margin-top:6px;">${o.trader_name}</div>
+          <div class="trader-meta">★ ${o.rating.toFixed(1)} · ${o.trades_completed} trades</div>
+        </div>
+        <button class="btn ${o.side==='sell'?'btn-green':'btn-primary'}" onclick="openOrderModal(${o.id})">
+          ${o.side==='sell'?'Buy from '+o.trader_name.split(' ')[0]:'Sell to '+o.trader_name.split(' ')[0]}
+        </button>
+      </div>
+      <div class="offer-grid">
+        <div class="cell">Rate<span class="v">KSh ${o.rate.toFixed(2)}</span></div>
+        <div class="cell">Available<span class="v">$${o.amount_usd}</span></div>
+        <div class="cell">Limits<span class="v">$${o.min_usd}–$${o.max_usd}</span></div>
+        <div class="cell">Pay window<span class="v">${o.payment_window_mins} min</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openOrderModal(offerId){
+  const offer = offersCache.find(o=>o.id===offerId);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay'; overlay.id = 'modalOverlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>${offer.side==='sell'?'Buy USD from '+offer.trader_name:'Sell USD to '+offer.trader_name}</h3>
+      <div class="sub">Rate KSh ${offer.rate.toFixed(2)} · limits $${offer.min_usd}–$${offer.max_usd}</div>
+      <label>Amount in USD</label>
+      <input type="number" id="orderAmount" placeholder="e.g. 50" oninput="updateModalTotal(${offer.rate})">
+      <div class="modal-total"><span>You'll ${offer.side==='sell'?'send via M-Pesa':'receive via M-Pesa'}</span><span id="modalTotal">KSh 0.00</span></div>
+      <div class="err" id="modalErr"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmCreateOrder(${offer.id})">Start order</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+function closeModal(){ document.getElementById('modalOverlay')?.remove(); }
+function updateModalTotal(rate){
+  const amt = parseFloat(document.getElementById('orderAmount').value)||0;
+  document.getElementById('modalTotal').textContent = fmtMoney(amt*rate,'KES');
+}
+async function confirmCreateOrder(offerId){
+  const amt = parseFloat(document.getElementById('orderAmount').value)||0;
+  const errEl = document.getElementById('modalErr');
+  try{
+    const order = await api('/orders', { method:'POST', body: JSON.stringify({offer_id: offerId, amount_usd: amt}) });
+    closeModal();
+    currentTab='orders'; activeOrderId=order.id;
+    render();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+function renderOrdersList(){
+  if(!ordersCache.length) return `<div class="empty"><h3>No orders yet</h3><p>Take an offer from the marketplace to start your first trade.</p></div>`;
+  return ordersCache.map(o=>`
+    <div class="order-card" style="cursor:pointer" onclick="openOrder(${o.id})">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="trader">${o.buyer_id===session.user.id ? o.seller_name : o.buyer_name} · $${o.amount_usd}</div>
+          <div class="trader-meta">${fmtMoney(o.amount_kes,'KES')} · you're the ${o.buyer_id===session.user.id?'buyer':'seller'}</div>
+        </div>
+        <span class="badge" style="color:${statusColor(o.status)};background:${statusColor(o.status)}22;">${statusLabel(o.status)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+function statusLabel(s){ return {awaiting_payment:'Awaiting payment', payment_claimed:'Payment claimed', released:'Released', disputed:'Disputed', cancelled:'Cancelled'}[s]||s; }
+function statusColor(s){ return {awaiting_payment:'var(--amber)', payment_claimed:'var(--amber)', released:'var(--green)', disputed:'var(--red)', cancelled:'var(--muted)'}[s]||'var(--muted)'; }
+
+async function openOrder(id){ activeOrderId=id; await loadView(); }
+
+async function renderOrderDetail(){
+  const o = await api('/orders/'+activeOrderId);
+  const isBuyer = o.buyer_id === session.user.id;
+  const remaining = o.deadline - Date.now();
+  const mins = Math.max(0, Math.floor(remaining/60000));
+  const secs = Math.max(0, Math.floor((remaining%60000)/1000));
+  const timerClass = remaining < 120000 ? 'crit' : '';
+  const active = o.status==='awaiting_payment' || o.status==='payment_claimed';
+
+  return `
+    <button class="btn btn-ghost" style="margin-bottom:14px;" onclick="activeOrderId=null;render()">&larr; Back to orders</button>
+    <div class="order-detail">
+      <div class="order-detail-head">
+        <div>
+          <h3>${isBuyer ? o.seller_name : o.buyer_name} — $${o.amount_usd} @ KSh ${o.rate.toFixed(2)}</h3>
+          <div class="sub">Order #${o.id} · you're the ${isBuyer?'buyer':'seller'}</div>
+        </div>
+        ${active ? `<div class="timer ${timerClass}">${remaining<0?'Expired':mins+':'+String(secs).padStart(2,'0')}</div>` : ''}
+      </div>
+
+      <div class="event-list">
+        ${o.events.map(e=>`<div class="ev"><div>${e.label}</div><div class="t">${fmtTime(e.created_at)}</div></div>`).join('')}
+      </div>
+
+      ${o.status==='disputed' ? `<div class="disputed-note">This order is under dispute. Review both sides' evidence before it's resolved manually.</div>` : ''}
+
+      ${renderOrderActions(o, isBuyer)}
+    </div>
+  `;
+}
+
+function renderOrderActions(o, isBuyer){
+  if(o.status==='awaiting_payment' && isBuyer){
+    return `
+      <div class="paypanel">
+        Pay this amount directly to <b>${o.seller_name}</b> via M-Pesa (${o.payout_details || 'ask seller for details'}), then submit the confirmation code.
+        <div class="amt">${fmtMoney(o.amount_kes,'KES')}</div>
+      </div>
+      <label>M-Pesa confirmation code</label>
+      <input id="mpesaCode" placeholder="e.g. SFC7Q8R9T1">
+      <div class="action-row">
+        <button class="btn btn-green" onclick="markPaid(${o.id})">I've sent the payment</button>
+        <button class="btn btn-red" onclick="disputeOrder(${o.id})">Raise a dispute</button>
+        <button class="btn btn-ghost" onclick="cancelOrder(${o.id})">Cancel order</button>
+      </div>`;
+  }
+  if(o.status==='awaiting_payment' && !isBuyer){
+    return `<div class="paypanel">Waiting for the buyer to pay ${fmtMoney(o.amount_kes,'KES')} directly to your M-Pesa.</div>`;
+  }
+  if(o.status==='payment_claimed' && !isBuyer){
+    return `
+      <div class="paypanel">Buyer submitted M-Pesa code <b>${o.mpesa_code}</b> for ${fmtMoney(o.amount_kes,'KES')}. Check your M-Pesa statement before releasing.</div>
+      <div class="action-row">
+        <button class="btn btn-green" onclick="releaseOrder(${o.id})">Confirm received — release order</button>
+        <button class="btn btn-red" onclick="disputeOrder(${o.id})">Raise a dispute</button>
+      </div>`;
+  }
+  if(o.status==='payment_claimed' && isBuyer){
+    return `<div class="paypanel">Payment code submitted. Waiting for ${o.seller_name} to confirm.</div>`;
+  }
+  if(o.status==='released'){
+    return `<div class="paypanel" style="color:var(--green);">Order complete. Seller should now credit the buyer on Deriv (via Deriv's own cashier/DP2P).</div>`;
+  }
+  if(o.status==='cancelled'){ return `<div class="paypanel">Order cancelled.</div>`; }
+  return '';
+}
+
+async function markPaid(id){
+  const code = document.getElementById('mpesaCode').value.trim();
+  if(!code) return alert('Enter the M-Pesa confirmation code first.');
+  try{ await api(`/orders/${id}/mark-paid`, {method:'POST', body: JSON.stringify({mpesa_code:code})}); await loadView(); }
+  catch(e){ alert(e.message); }
+}
+async function releaseOrder(id){ try{ await api(`/orders/${id}/release`, {method:'POST'}); await loadView(); }catch(e){ alert(e.message); } }
+async function disputeOrder(id){ try{ await api(`/orders/${id}/dispute`, {method:'POST'}); await loadView(); }catch(e){ alert(e.message); } }
+async function cancelOrder(id){ try{ await api(`/orders/${id}/cancel`, {method:'POST'}); await loadView(); }catch(e){ alert(e.message); } }
+
+function renderCreateForm(){
+  return `
+    <div class="create-form" style="margin:0;">
+      <h3 style="font-family:var(--font-display);margin-top:0;">Post a new offer</h3>
+      <div class="form-grid">
+        <div><label>I want to</label>
+          <select id="f_side"><option value="sell">Sell USD (withdraw from Deriv)</option><option value="buy">Buy USD (deposit to Deriv)</option></select></div>
+        <div><label>Amount available (USD)</label><input type="number" id="f_amount" placeholder="e.g. 300"></div>
+        <div><label>Rate (KSh per $1)</label><input type="number" id="f_rate" placeholder="e.g. 129.00"></div>
+        <div><label>Min order (USD)</label><input type="number" id="f_min" placeholder="e.g. 10"></div>
+        <div><label>Max order (USD)</label><input type="number" id="f_max" placeholder="e.g. 150"></div>
+        <div><label>Payment window (minutes)</label><input type="number" id="f_window" placeholder="e.g. 15"></div>
+      </div>
+      <div class="err" id="f_err"></div>
+      <div class="action-row"><button class="btn btn-primary" onclick="submitOffer()">Post offer</button></div>
+    </div>`;
+}
+async function submitOffer(){
+  const side = document.getElementById('f_side').value;
+  const amount_usd = parseFloat(document.getElementById('f_amount').value);
+  const rate = parseFloat(document.getElementById('f_rate').value);
+  const min_usd = parseFloat(document.getElementById('f_min').value);
+  const max_usd = parseFloat(document.getElementById('f_max').value);
+  const payment_window_mins = parseFloat(document.getElementById('f_window').value);
+  const errEl = document.getElementById('f_err');
+  try{
+    await api('/offers', {method:'POST', body: JSON.stringify({side, amount_usd, rate, min_usd, max_usd, payment_window_mins})});
+    currentTab='market'; render();
+  }catch(e){ errEl.textContent = e.message; }
+}
+
+function startTicker(){
+  if(tickHandle) clearInterval(tickHandle);
+  tickHandle = setInterval(()=>{
+    if(currentTab==='orders' && activeOrderId){
+      const container = document.querySelector('.timer');
+      if(container){ loadView(); } // cheap refresh; fine at this scale
+    }
+  }, 15000);
+}
+
+render();
+</script>
+</body>
+</html>
